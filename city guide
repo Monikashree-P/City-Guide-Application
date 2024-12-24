@@ -1,0 +1,271 @@
+package CityGuideApp;
+import javax.swing.*;
+import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+
+public class CityGuideApp {
+    private static final Map<String, User> users = new HashMap<>(); // Stores registered users
+    private static final Map<String, Map<String, Map<String, Place>>> cityData = new HashMap<>(); // City data
+
+    public static void main(String[] args) {
+        initializeData(); // Load initial data
+        SwingUtilities.invokeLater(CityGuideApp::showAccountCreationScreen);
+    }
+
+    private static void showAccountCreationScreen() {
+        JFrame accountFrame = new JFrame("Create an Account");
+        accountFrame.setSize(400, 300);
+							
+        accountFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        accountFrame.setLayout(new GridLayout(5, 2, 10, 10));
+
+        JLabel emailLabel = new JLabel("Email:");
+        JTextField emailField = new JTextField();
+        JLabel userLabel = new JLabel("Username:");
+        JTextField userField = new JTextField();
+        JLabel passLabel = new JLabel("Password:");
+        JPasswordField passField = new JPasswordField();
+        JButton createButton = new JButton("Create Account");
+        JLabel statusLabel = new JLabel();
+
+        accountFrame.add(emailLabel);
+        accountFrame.add(emailField);
+        accountFrame.add(userLabel);
+        accountFrame.add(userField);
+        accountFrame.add(passLabel);
+        accountFrame.add(passField);
+        accountFrame.add(new JLabel()); // Spacer
+        accountFrame.add(createButton);
+        accountFrame.add(new JLabel()); // Spacer
+						
+        accountFrame.add(statusLabel);
+
+        createButton.addActionListener(e -> {
+            String email = emailField.getText().trim();
+            String username = userField.getText().trim();
+            String password = new String(passField.getPassword()).trim();
+
+            if (!email.isEmpty() && !username.isEmpty() && !password.isEmpty()) {
+                if (!users.containsKey(username)) {
+                    users.put(username, new User(email, username, password));
+                    statusLabel.setText("Account created successfully! Please login.");
+                    statusLabel.setForeground(Color.GREEN);
+                    accountFrame.dispose();
+                    showLoginScreen();
+                } else {
+                    statusLabel.setText("Username already exists.");
+                    statusLabel.setForeground(Color.RED);
+                }
+            } else {
+                statusLabel.setText("All fields are required.");
+                statusLabel.setForeground(Color.RED);
+							
+            }
+        });
+
+        accountFrame.setVisible(true);
+    }
+
+    private static void showLoginScreen() {
+        JFrame loginFrame = new JFrame("Login");
+        loginFrame.setSize(400, 200);
+        loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        loginFrame.setLayout(new GridLayout(3, 2, 10, 10));
+
+        JLabel userLabel = new JLabel("Username:");
+        JTextField userField = new JTextField();
+        JLabel passLabel = new JLabel("Password:");
+        JPasswordField passField = new JPasswordField();
+        JButton loginButton = new JButton("Login");
+        JLabel statusLabel = new JLabel();
+
+        loginFrame.add(userLabel);
+        loginFrame.add(userField);
+						
+        loginFrame.add(passLabel);
+        loginFrame.add(passField);
+        loginFrame.add(loginButton);
+        loginFrame.add(statusLabel);
+
+        loginButton.addActionListener(e -> {
+            String username = userField.getText().trim();
+            String password = new String(passField.getPassword()).trim();
+
+            if (users.containsKey(username) && users.get(username).getPassword().equals(password)) {
+                statusLabel.setText("Login successful!");
+                statusLabel.setForeground(Color.GREEN);
+                loginFrame.dispose();
+                showCityGuideScreen();
+            } else {
+                statusLabel.setText("Invalid username or password.");
+                statusLabel.setForeground(Color.RED);
+            }
+        });
+
+						
+        loginFrame.setVisible(true);
+    }
+
+    private static void showCityGuideScreen() {
+        JFrame guideFrame = new JFrame("City Guide");
+        guideFrame.setSize(500, 400);
+        guideFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        guideFrame.setLayout(new BorderLayout());
+
+        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JLabel stateLabel = new JLabel("State:");
+        JComboBox<String> stateComboBox = new JComboBox<>(cityData.keySet().toArray(new String[0]));
+        JLabel districtLabel = new JLabel("District:");
+        JComboBox<String> districtComboBox = new JComboBox<>();
+        JLabel placeLabel = new JLabel("Place:");
+        JComboBox<String> placeComboBox = new JComboBox<>();
+        JButton searchButton = new JButton("Search");
+
+        inputPanel.add(stateLabel);
+        inputPanel.add(stateComboBox);
+						
+        inputPanel.add(districtLabel);
+        inputPanel.add(districtComboBox);
+        inputPanel.add(placeLabel);
+        inputPanel.add(placeComboBox);
+        inputPanel.add(new JLabel()); // Spacer
+        inputPanel.add(searchButton);
+
+        JTextArea resultArea = new JTextArea();
+        resultArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(resultArea);
+
+        JLabel imageLabel = new JLabel();
+
+        guideFrame.add(inputPanel, BorderLayout.NORTH);
+        guideFrame.add(scrollPane, BorderLayout.CENTER);
+        guideFrame.add(imageLabel, BorderLayout.SOUTH);
+
+        stateComboBox.addActionListener(e -> {
+            String selectedState = (String) stateComboBox.getSelectedItem();
+            districtComboBox.removeAllItems();
+            if (selectedState != null) {
+							
+                cityData.get(selectedState).keySet().forEach(districtComboBox::addItem);
+            }
+        });
+
+        districtComboBox.addActionListener(e -> {
+            String selectedState = (String) stateComboBox.getSelectedItem();
+            String selectedDistrict = (String) districtComboBox.getSelectedItem();
+
+            placeComboBox.removeAllItems();
+            if (selectedState != null && selectedDistrict != null) {
+                cityData.get(selectedState).get(selectedDistrict).keySet().forEach(placeComboBox::addItem);
+            }
+        });
+
+        searchButton.addActionListener(e -> {
+            String selectedState = (String) stateComboBox.getSelectedItem();
+            String selectedDistrict = (String) districtComboBox.getSelectedItem();
+            String selectedPlace = (String) placeComboBox.getSelectedItem();
+
+            if (selectedState != null && selectedDistrict != null && selectedPlace != null) {
+                Place place = cityData.get(selectedState).get(selectedDistrict).get(selectedPlace);
+							18
+                resultArea.setText(place.getDescription());
+                imageLabel.setIcon(new ImageIcon(place.getImagePath()));
+            }
+        });
+
+        guideFrame.setVisible(true);
+    }
+
+    private static void initializeData() {
+        // Tamil Nadu
+        Map<String, Map<String, Place>> tamilNaduDistricts = new HashMap<>();
+        tamilNaduDistricts.put("Namakkal", Map.of(
+                "Pushpa", new Place("Open at 10 am .", "pushpa.jpg"),
+                "KPS Restaurant", new Place("Popular spot for traditional South Indian meals.Open at 11 am.", "kps.jpg"),
+                "Gowtham Hotel",new Place("Popular for non-veg.Open at 9 am","gowtham.jpg"),
+                "Kongu Hotel",new Place("Popular for Kongu Nadu dishes.","kongi.jpg"),
+                "Khalidh's", new Place("Popular for briyani.Available at 11 am","khalid.jpg"),
+                "MM briyani",new Place("Available at 11 am","mm.jpg"),
+                "Yaazh briyani",new Place("Available at 10 am to 11 pm","yaazh.jpg")
+                ));
+						
+
+        tamilNaduDistricts.put("Karur", Map.of(
+                "Valluvar", new Place("available at 11 am.", "valluvar.jpg"),
+                "Hemala", new Place("available at 10 am..", "hemala.jpg"),
+                "Archana", new Place("available at 10 am..", "archana.jpg"),
+                "Udhaiyam", new Place("available at 11 am.", "udhaiyam.jpg"),
+                "Aachi Biryani", new Place("Famous for its delicious biryanis.", "biryani.jpg")
+                ));
+        tamilNaduDistricts.put("Salem", Map.of(
+                "Lakshmi Hotel", new Place("available at 10 am.", "lakshmi.jpg"),
+                "Selvi Mess", new Place("available at 11 am.", "selvi.jpg"),
+                "Balu Mess", new Place("available at 9 am.", "balu.jpg")
+                ));
+
+        // Kerala
+        Map<String, Map<String, Place>> keralaDistricts = new HashMap<>();
+        keralaDistricts.put("Alappuzha", Map.of(
+                "Houseboats", new Place("Stay on a houseboat in the backwaters.", "houseboat.jpg"),
+                "Tharavadu Restaurant", new Place("Specializes in seafood dishes.", "seafood.jpg")));
+        keralaDistricts.put("Ernakulam", Map.of(
+                "Marine Drive", new Place("Scenic promenade ideal for evening walks.", "marine.jpg"),
+                "Kayees Rahmathulla", new Place("Known for its iconicmuttonbiryani.","kayees.jpg")));						20
+        keralaDistricts.put("Kollam", Map.of(
+                "Ashtamudi Lake", new Place("A serene lake perfect for boating.", "ashtamudi.jpg"),
+                "Nani Hotel", new Place("Great spot for authentic Kerala sadhya.", "nani.jpg")));
+
+
+        // Karnataka
+
+        Map<String, Map<String, Place>> karnatakaDistricts = new HashMap<>();
+        karnatakaDistricts.put("Bangalore", Map.of(
+                "Lalbagh Garden", new Place("Botanical garden with rare plants.", "lalbagh.jpg"),
+                "MTR Restaurant", new Place("Legendary spot for authentic South Indian food.", "mtr.jpg")));
+        karnatakaDistricts.put("Mysore", Map.of(
+                "Mysore Palace", new Place("Historical palace showcasing grandeur.", "mysorepalace.jpg"),
+                "Vinayaka Mylari", new Place("Small eatery famous for its dosas.", "mylari.jpg")));
+        karnatakaDistricts.put("Coorg", Map.of(
+                "Abbey Falls", new Place("Beautiful waterfall surrounded by coffee estates.", "abbeyfalls.jpg"),
+                "Coorg Cuisine", new Place("Specializes in Kodava dishes.", "coorg.jpg")));
+
+
+        cityData.put("Tamil Nadu", tamilNaduDistricts);
+        cityData.put("Kerala", keralaDistricts);
+        cityData.put("Karnataka", karnatakaDistricts);
+							
+    }
+
+
+    static class User {
+        private final String email;
+        private final String username;
+        private final String password;
+
+        public User(String email, String username, String password) {
+            this.email = email;
+            this.username = username;
+            this.password = password;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+    }
+
+    static class Place {
+        private final String description;
+        private final String imagePath;
+							
+        public Place(String description, String imagePath) {
+            this.description = description;
+            this.imagePath = imagePath;
+        }
+        public String getDescription() {
+            return description;
+        }
+        public String getImagePath() {
+            return imagePath;
+      }
+}
